@@ -14,6 +14,14 @@ GOOS=linux GOARCH=amd64 go build -o "$BIN"
 for HOST in "${HOSTS[@]}"; do
   echo "Deploying to $HOST..."
   rsync -avz --progress "$BIN" "${USER}@${HOST}:~/"
+  if [ "$HOST" == "192.168.2.127" ]; then
+    ssh "${USER}@${HOST}" "sudo pkill -x netlsr || true"
+    ssh "${USER}@${HOST}" "nohup sudo netlsr -mode server -ifname tun77 -local-ip 10.177.0.1/24 -debug > netlsr.log 2>&1 &"
+  else
+    sleep 2
+    ssh "${USER}@${HOST}" "sudo pkill -x netlsr || true"
+    ssh "${USER}@${HOST}" "nohup sudo netlsr -mode client -remote 192.168.2.127 -ifname tun77 -local-ip 10.177.0.2/24 > netlsr.log 2>&1 &"
+  fi
 done
 
 echo "Deployment complete." 

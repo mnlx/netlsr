@@ -28,7 +28,7 @@ func (l *linuxTunSetup) Setup(ifaceName, localIP, peerIP, tunCIDR string) (*wate
 	}
 
 	// assign IP address and peer
-	cmd := exec.Command("ip", "addr", "add", localIP, "peer", peerIP, "dev", iface.Name())
+	cmd := exec.Command("ip", "addr", "add", localIP, "dev", iface.Name())
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("assigning IP address: %v, output: %s", err, out)
 	}
@@ -40,10 +40,11 @@ func (l *linuxTunSetup) Setup(ifaceName, localIP, peerIP, tunCIDR string) (*wate
 	}
 
 	// add route for tun network
-	cmd = exec.Command("ip", "route", "add", tunCIDR, "dev", iface.Name())
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("adding route: %v, output: %s", err, out)
-	}
+	// cmd = exec.Command("ip", "route", "add", tunCIDR, "dev", iface.Name())
+	// fmt.Println("adding route", tunCIDR, "dev", iface.Name())
+	// if out, err := cmd.CombinedOutput(); err != nil {
+	// 	return nil, fmt.Errorf("adding route: %v, output: %s", err, out)
+	// }
 
 	return iface, nil
 }

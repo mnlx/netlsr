@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"os/exec"
@@ -53,14 +54,14 @@ func clientMode(ifaceName, localIP, peerIP, tunCIDR, serverAddr string, port int
 			log.Printf("conn read: %v", err)
 			return
 		}
-T		_, err = iface.Write(buf[:n])
+		_, err = iface.Write(buf[:n])
 		if err != nil {
 			log.Printf("iface write: %v", err)
 		}
 	}
 }
 
-func serverMode(ifaceName, localIP, peerIP, tunCIDR string, port int, extIface string) {
+func serverMode(ifaceName, localIP, peerIP, tunCIDR string, port int, extIface string, debug bool) {
 	iface, err := setupTun(ifaceName, localIP, peerIP, tunCIDR)
 	checkError(err, "setupTun")
 
@@ -71,7 +72,7 @@ func serverMode(ifaceName, localIP, peerIP, tunCIDR string, port int, extIface s
 	}
 
 	// configure NAT
-	cmd = exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-s", "10.99.0.0/16", "-o", extIface, "-j", "MASQUERADE")
+	cmd = exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-s", "10.177.0.0/24", "-o", extIface, "-j", "MASQUERADE")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Printf("warning: configuring NAT: %v, output: %s", err, out)
 	}
@@ -98,6 +99,9 @@ func serverMode(ifaceName, localIP, peerIP, tunCIDR string, port int, extIface s
 				log.Printf("iface read: %v", err)
 				return
 			}
+			if debug {
+				log.Printf("receiving packet from %s", clientAddr.String())
+			}
 			_, err = conn.WriteTo(buf[:n], clientAddr)
 			if err != nil {
 				log.Printf("conn write: %v", err)
@@ -111,6 +115,11 @@ func serverMode(ifaceName, localIP, peerIP, tunCIDR string, port int, extIface s
 			log.Printf("conn read: %v", err)
 			return
 		}
+
+		if debug {
+			log.Printf("sending packet to %s", addr.String())
+		}
+
 		if addr.String() != clientAddr.String() {
 			continue
 		}
@@ -119,11 +128,11 @@ func serverMode(ifaceName, localIP, peerIP, tunCIDR string, port int, extIface s
 			log.Printf("iface write: %v", err)
 		}
 
-		conn, err := net.Dial("ip4:icmp", "10.100.0.1")
-		if err != nil {
-			log.Fatal(err)
-		}
-		conn.Write([]byte{ /* raw IP packet */ })
+		// conn, err := net.Dial("ip4:icmp", "10.100.0.1")
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+		// conn.Write([]byte{ /* raw IP packet */ })
 	}
 }
 
@@ -133,22 +142,38 @@ func main() {
 	tunName := flag.String("ifname", "utun99", "TUN interface name")
 	localIP := flag.String("local-ip", "", "local TUN IP, e.g. 10.100.0.1/16")
 	peerIP := flag.String("peer-ip", "", "peer TUN IP, e.g. 10.100.0.2")
-	tunCIDR := flag.String("tun-cidr", "10.100.0.0/16", "TUN network CIDR")
 	port := flag.Int("port", 5000, "UDP port")
 	extIface := flag.String("ext-iface", "eth1", "external interface for NAT (server mode)")
+	debug := flag.Bool("debug", false, "debug mode")
 	flag.Parse()
 
 	if *mode == "client" && *serverAddr == "" {
 		log.Fatal("remote server address required in client mode")
 	}
 
-	if *localIP == "" || *peerIP == "" {
-		log.Fatal("local-ip and peer-ip are required")
-	}
+	tunCIDR := extractSubnetCIDR(*localIP)
+	// if *localIP == "" || *peerIP == "" {
+	// 	log.Fatal("local-ip and peer-ip are required")
+	// }
 
 	if *mode == "client" {
-		clientMode(*tunName, *localIP, *peerIP, *tunCIDR, *serverAddr, *port)
+		clientMode(*tunName, *localIP, *peerIP, tunCIDR, *serverAddr, *port)
 	} else {
-		serverMode(*tunName, *localIP, *peerIP, *tunCIDR, *port, *extIface)
+		serverMode(*tunName, *localIP, *peerIP, tunCIDR, *port, *extIface, *debug)
 	}
+}
+
+func extractSubnetCIDR(cidr string) string {
+	ip, ipNet, err := net.ParseCIDR(cidr)
+	fmt.Println("ip", ip)
+	fmt.Println("ipNet", ipNet)
+	if err != nil {
+		panic(err)
+	}
+
+	// Apply the network mask to get the subnet base (e.g. 10.177.0.0)
+	networkIP := ip.Mask(ipNet.Mask)
+	maskSize, _ := ipNet.Mask.Size()
+
+	return fmt.Sprintf("%s/%d", networkIP.String(), maskSize)
 }
