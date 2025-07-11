@@ -1,0 +1,37 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"net"
+)
+
+func main() {
+	ln, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Listening on :8080")
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println("accept error:", err)
+			continue
+		}
+		go handle(conn)
+	}
+}
+
+func handle(conn net.Conn) {
+	defer conn.Close()
+	reader := bufio.NewReader(conn)
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Println("read error:", err)
+		return
+	}
+	fmt.Printf("Request: %s", line)
+	// Always respond with a basic HTTP response
+	response := "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, World!"
+	conn.Write([]byte(response))
+}

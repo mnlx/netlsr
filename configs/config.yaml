@@ -1,0 +1,38 @@
+# NetLSR Configuration
+# This file contains both client and server configurations
+# You can override values using environment variables
+
+client:
+  # TUN interface name
+  tun_name: "tun0"
+  
+  # Local IP address for the TUN interface
+  local_ip: "10.0.0.1"
+  
+  # Peer IP address (server's TUN IP)
+  peer_ip: "10.0.0.2"
+  
+  # Server address to connect to
+  server_addr: "192.168.1.100"
+  
+  # Server port
+  port: 8080
+
+server:
+  # TUN interface name
+  tun_name: "tun0"
+  
+  # Local IP address for the TUN interface
+  local_ip: "10.0.0.1"
+  
+  # Peer IP address (client's TUN IP)
+  peer_ip: "10.0.0.2"
+  
+  # Server port to listen on
+  port: 8080
+  
+  # External interface for NAT (e.g., "eth0", "wlan0")
+  ext_iface: "eth0"
+  
+  # Enable debug mode
+  debug: false 

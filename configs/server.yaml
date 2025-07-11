@@ -1,0 +1,7 @@
+server:
+  tun_name: "utun99"
+  local_ip: "10.177.0.1/24"
+  peer_ip: "10.177.0.2"
+  port: 8080
+  ext_iface: "utun99"  # Change this to your external interface
+  debug: false 
