@@ -18,12 +18,13 @@ func main() {
 	// port := flag.Int("port", 5000, "UDP port")
 	// extIface := flag.String("ext-iface", "eth1", "external interface for NAT (server mode)")
 	// debug := flag.Bool("debug", false, "debug mode")
-	configPath := flag.String("config", "client.yaml", "config file path")
+	configPath := flag.String("config", "config.yaml", "config file path")
+	flag.Parse()
+
 	config, err := config.LoadConfig(*configPath)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
-	flag.Parse()
 
 	// if *mode == "client" && *serverAddr == "" {
 	// 	log.Fatal("remote server address required in client mode")

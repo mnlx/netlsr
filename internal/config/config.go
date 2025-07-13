@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 type Config struct {
 	Client ClientConfig `yaml:"client"`
 	Server ServerConfig `yaml:"server"`
+	Debug  bool         `yaml:"debug" env:"NETLSR_DEBUG"`
 }
 
 // ClientConfig holds client-specific configuration
@@ -65,6 +67,9 @@ func LoadConfig(configPath string) (*Config, error) {
 	if configPath != "" {
 		if err := loadFromFile(configPath, config); err != nil {
 			return nil, fmt.Errorf("failed to load config file: %w", err)
+		}
+		if config.Debug {
+			log.Println(config)
 		}
 	}
 

@@ -4,4 +4,4 @@ server:
   peer_ip: "10.177.0.2"
   port: 8080
   ext_iface: "utun99"  # Change this to your external interface
-  debug: false 
+  debug: true 
